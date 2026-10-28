@@ -1,1334 +1,1432 @@
-import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
-import numpy as np
-import os
-import io
 import base64
-import requests
+import io
+import os
 from datetime import datetime
 
-# ==============================================================================
-# Page Configuration & Metadata
-# ==============================================================================
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+import requests
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
 st.set_page_config(
-    page_title="WORK PLACE INTEGRATION GENERAL ASSEMBELY",
+    page_title="WORKPLACE INTEGRATION - CC22 LHD | GENERAL ASSEMBLY",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ==============================================================================
-# Custom CSS Styling: High-Contrast, Perfectly Matched Tabs & Modern UI
-# ==============================================================================
+DEFAULT_EXCEL_PATH = "WPI Implementation at TVR - Time Line.xlsx"
+
+GITHUB_REPO_OWNER = "elagosan"
+GITHUB_REPO_NAME = "GA_WPI"
+GITHUB_TARGET_FILE = "WPI Implementation at TVR - Time Line.xlsx"
+
+STANDARD_CATEGORIES = [
+    "Customer Experience",
+    "Workplace Organization",
+    "Health and Safety",
+    "Logistics",
+]
+
+# ============================================================
+# CSS STYLING
+# ============================================================
 st.markdown(
     """
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-      html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      }
-      .stApp {
-        background-color: #f8fafc;
-      }
-      [data-testid="stSidebar"] {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: Inter, sans-serif;
+    }
+
+    .stApp {
+        background: #f8fafc;
+    }
+
+    [data-testid="stSidebar"] {
         background: #0f172a !important;
         border-right: 1px solid #1e293b;
-      }
-      [data-testid="stSidebar"] * {
+    }
+
+    [data-testid="stSidebar"] * {
         color: #f1f5f9 !important;
-      }
-      [data-testid="stSidebar"] hr {
+    }
+
+    [data-testid="stSidebar"] hr {
         border-color: #334155 !important;
-      }
-      .block-container {
-        padding-top: 1.2rem;
-        padding-bottom: 2.5rem;
-        max-width: 1480px;
-      }
+    }
 
-      /* -------------------------------------------------------------
-         HIGH-CONTRAST TAB NAVIGATION (Crystal-clear visibility)
-         ------------------------------------------------------------- */
-      div[data-testid="stTabs"] {
-        background: transparent;
-        margin-top: 4px;
-      }
-      div[data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background-color: #ffffff !important;
-        border-radius: 14px !important;
-        padding: 8px 10px !important;
-        border: 1.5px solid #cbd5e1 !important;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
-        gap: 10px !important;
-        margin-bottom: 20px !important;
-      }
-      div[data-testid="stTabs"] button[role="tab"] {
-        background-color: #f1f5f9 !important;
-        color: #0f172a !important;
-        font-weight: 750 !important;
-        font-size: 14px !important;
-        border-radius: 10px !important;
-        padding: 10px 20px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        cursor: pointer !important;
-      }
-      div[data-testid="stTabs"] button[role="tab"] p {
-        color: #1e293b !important;
-        font-weight: 750 !important;
-        font-size: 14px !important;
-        margin: 0 !important;
-      }
-      div[data-testid="stTabs"] button[role="tab"]:hover {
-        background-color: #e2e8f0 !important;
-        border-color: #94a3b8 !important;
-        transform: translateY(-1px);
-      }
-      div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
-        color: #ffffff !important;
-        border: 1.5px solid #1d4ed8 !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
-      }
-      div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p {
-        color: #ffffff !important;
-        font-weight: 800 !important;
-      }
+    .block-container {
+        padding-top: .35rem;
+        padding-bottom: 1rem;
+        max-width: 100%;
+    }
 
-      /* -------------------------------------------------------------
-         HERO BANNER
-         ------------------------------------------------------------- */
-      .hero-banner {
+    .hero-banner {
         padding: 22px 26px;
         border-radius: 16px;
         color: white;
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 85%, #38bdf8 130%);
-        box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.22);
-        margin-bottom: 18px;
-        position: relative;
+        background: linear-gradient(
+            135deg, #0f172a 0%, #1e3a8a 45%,
+            #2563eb 85%, #38bdf8 130%
+        );
+        box-shadow: 0 10px 25px -5px rgba(30,64,175,.22);
+        margin-bottom: 14px;
         overflow: hidden;
-      }
-      .hero-banner h1 {
+    }
+
+    .hero-banner h1 {
         font-size: 26px;
         line-height: 1.25;
-        margin: 0 0 4px 0;
+        margin: 2px 0 6px;
         font-weight: 800;
-        letter-spacing: -0.5px;
-      }
-      .hero-banner p {
+    }
+
+    .hero-banner p {
         color: #e0f2fe;
         margin: 0;
-        font-size: 13.5px;
-        font-weight: 400;
-      }
-      .hero-tag {
-        display: inline-block;
-        text-transform: uppercase;
-        letter-spacing: 1.6px;
-        font-size: 10px;
-        font-weight: 700;
-        color: #93c5fd;
-        background: rgba(147, 197, 253, 0.15);
-        padding: 3px 9px;
-        border-radius: 20px;
-        margin-bottom: 8px;
-        border: 1px solid rgba(147, 197, 253, 0.3);
-      }
+        font-size: 15px;
+        font-weight: 600;
+    }
 
-      /* -------------------------------------------------------------
-         METRIC & PANEL CARDS
-         ------------------------------------------------------------- */
-      .metric-card {
+    .metric-card {
         background: white;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
         padding: 15px 18px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-        margin-bottom: 12px;
-      }
-      .metric-label {
+        box-shadow: 0 2px 8px rgba(15,23,42,.04);
+        margin-bottom: 8px;
+    }
+
+    .metric-label {
         font-size: 11px;
         font-weight: 700;
         color: #64748b;
-        letter-spacing: 0.5px;
+        letter-spacing: .5px;
         text-transform: uppercase;
         margin-bottom: 5px;
         display: flex;
         justify-content: space-between;
-        align-items: center;
-      }
-      .metric-value {
+    }
+
+    .metric-value {
         font-size: 27px;
         font-weight: 800;
-        letter-spacing: -0.8px;
         line-height: 1.1;
-      }
-      .metric-sub {
+    }
+
+    .metric-sub {
         font-size: 11px;
         color: #64748b;
         margin-top: 5px;
-      }
+    }
 
-      /* Home column card containers */
-      .home-panel {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 20px 22px;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-        margin-bottom: 16px;
-      }
-      .home-panel-title {
+    .home-panel-title {
         font-size: 17px;
         font-weight: 800;
         color: #0f172a;
         margin-bottom: 3px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .home-panel-sub {
+    }
+
+    .home-panel-sub {
         font-size: 12px;
         color: #64748b;
-        margin-bottom: 14px;
-      }
+        margin-bottom: 10px;
+    }
 
-      /* Category Badges */
-      .badge-closed {
+    .badge-closed {
         background: #dcfce7;
         color: #15803d;
         padding: 3px 9px;
         border-radius: 9999px;
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 700;
-      }
-      .badge-prog {
+    }
+
+    .badge-prog {
         background: #fef3c7;
         color: #b45309;
         padding: 3px 9px;
         border-radius: 9999px;
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 700;
-      }
-      .badge-affected {
+    }
+
+    .badge-affected {
         background: #dbeafe;
         color: #1e40af;
         padding: 3px 9px;
         border-radius: 9999px;
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 700;
-      }
+    }
 
-      .footer-bar {
+    .footer-bar {
         text-align: center;
         color: #94a3b8;
-        font-size: 11.5px;
-        padding: 24px 0 10px;
+        font-size: 11px;
+        padding: 16px 0 6px;
         border-top: 1px solid #e2e8f0;
-        margin-top: 24px;
-      }
+        margin-top: 18px;
+    }
+
+    div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+        background: white !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        border-radius: 9px !important;
+        padding: 9px 16px !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        background: #2563eb !important;
+        color: white !important;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p {
+        color: white !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ==============================================================================
-# Helper Functions: Data Normalization & Resilient File Reading
-# ==============================================================================
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
 def get_logo_base64():
-    for p in ["stellantis_logo.jpg", "logo.jpg"]:
-        if os.path.exists(p):
+    for path in (
+        "stellantis_logo.jpg",
+        "logo.jpg",
+        "stellantis_logo.png",
+        "logo.png",
+    ):
+        if os.path.exists(path):
             try:
-                with open(p, "rb") as f:
-                    return base64.b64encode(f.read()).decode("utf-8")
-            except Exception:
-                pass
+                with open(path, "rb") as image_file:
+                    return base64.b64encode(
+                        image_file.read()
+                    ).decode("utf-8")
+            except OSError:
+                continue
     return None
 
-def extract_station_assessment(file_bytes):
-    """
-    Extracts station assessment metrics from the station progress sheet in the Excel file.
-    Returns dict: {'overall': int, 'in_progress': int, 'completed': int, 'details_df': DataFrame}
-    """
-    default_res = {'overall': 44, 'in_progress': 30, 'completed': 14, 'details_df': pd.DataFrame()}
-    if not file_bytes:
-        return default_res
-    try:
-        bio = io.BytesIO(file_bytes)
-        xl = pd.ExcelFile(bio)
-        sheet_target = None
-        for s in ['STATION WISE PROGRESS (2)', 'STATION WISE PROGRESS']:
-            if s in xl.sheet_names:
-                sheet_target = s
-                break
-        if not sheet_target:
-            return default_res
-        
-        df = pd.read_excel(bio, sheet_name=sheet_target)
-        stn_col = df.columns[0]
-        stn_df = df.dropna(subset=[stn_col]).copy()
-        stn_df = stn_df[stn_df[stn_col].astype(str).str.strip().str.upper() != 'STATION #']
-        
-        obs_col = None
-        for c in stn_df.columns:
-            first_val = str(df[c].iloc[0]).upper()
-            if 'OBSERVATION' in first_val or 'OBSERVATION' in str(c).upper():
-                obs_col = c
-                break
-        
-        comp_col = None
-        for c in stn_df.columns:
-            first_val = str(df[c].iloc[0]).upper()
-            if 'COMPLETION' in str(c).upper() or 'COMPLETION' in first_val or '%' in str(c):
-                comp_col = c
-                break
-        
-        total_stations = len(stn_df)
-        completed_cnt = 0
-        in_progress_cnt = 0
-        
-        if obs_col:
-            obs_series = stn_df[obs_col].astype(str).str.strip().str.lower()
-            completed_cnt = int((obs_series == 'completed').sum())
-            in_progress_cnt = int((obs_series == 'inprogress').sum())
-        elif comp_col:
-            numeric_comp = pd.to_numeric(stn_df[comp_col], errors='coerce').fillna(0)
-            completed_cnt = int((numeric_comp >= 1.0).sum())
-            in_progress_cnt = total_stations - completed_cnt
-            
-        if total_stations == 0:
-            return default_res
-            
-        display_df = pd.DataFrame({
-            'Station': stn_df[stn_col].astype(str).str.strip(),
-            'Status': stn_df[obs_col].astype(str).str.strip().str.title() if obs_col else 'In Progress',
-            'Completion %': (pd.to_numeric(stn_df[comp_col], errors='coerce').fillna(0) * 100).round(1).astype(str) + '%' if comp_col else 'N/A'
-        })
-        
-        return {
-            'overall': total_stations,
-            'in_progress': in_progress_cnt,
-            'completed': completed_cnt,
-            'details_df': display_df
-        }
-    except Exception:
-        return default_res
 
-DEFAULT_EXCEL_PATH = "WPI Implementation at TVR - Time Line.xlsx"
-GITHUB_REPO_OWNER = "elagosan"
-GITHUB_REPO_NAME = "GA_WPI"
-GITHUB_TARGET_FILE = "WPI Implementation at TVR - Time Line.xlsx"
+def clean_column_name(column):
+    return str(column).strip().replace("\n", " ")
 
-def sync_excel_to_github(file_bytes, target_filename, token):
-    """
-    Auto-uploads newly uploaded Excel file to GitHub repository via GitHub REST API.
-    """
-    if not token:
-        return False, "GitHub Token is not set."
-    
-    url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/contents/{target_filename}"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    sha = None
-    try:
-        r_get = requests.get(url, headers=headers, timeout=10)
-        if r_get.status_code == 200:
-            sha = r_get.json().get("sha")
-    except Exception as e:
-        return False, f"GitHub check error: {e}"
 
-    b64_content = base64.b64encode(file_bytes).decode("utf-8")
-    payload = {
-        "message": f"Auto-update Excel dataset: {target_filename}",
-        "content": b64_content,
-    }
-    if sha:
-        payload["sha"] = sha
-
-    try:
-        r_put = requests.put(url, headers=headers, json=payload, timeout=20)
-        if r_put.status_code in [200, 201]:
-            return True, "Successfully synced to GitHub!"
-        else:
-            err_msg = r_put.json().get("message", r_put.text)
-            return False, f"GitHub API ({r_put.status_code}): {err_msg}"
-    except Exception as e:
-        return False, f"GitHub connection error: {e}"
-
-STANDARD_CATEGORIES = [
-    "Health and Safety",
-    "Customer Experience",
-    "Logistics",
-    "Workplace Organization",
-]
-
-CATEGORY_PALETTE = {
-    "Health and Safety": "#ef4444",
-    "Customer Experience": "#6366f1",
-    "Logistics": "#0284c7",
-    "Workplace Organization": "#059669",
-    "All Categories": "#2563eb",
-}
-
-STATUS_PALETTE = {
-    "Closed": "#10b981",       # Emerald Green
-    "In Progress": "#f59e0b",  # Amber
-    "Affected": "#2563eb",     # Royal Blue
-    "Overall": "#2563eb",
-    "Completed": "#10b981",
-    "Other": "#94a3b8",
-}
-
-def clean_column_name(col):
-    if not isinstance(col, str):
-        col = str(col)
-    return col.strip().replace("\n", " ")
-
-def normalize_category_value(val):
-    if pd.isna(val) or val is None:
+def normalize_category_value(value):
+    if pd.isna(value) or value is None:
         return "Uncategorized"
-    s = str(val).strip().upper()
-    if "HEALTH" in s or "SAFETY" in s:
+
+    value = str(value).strip()
+    upper = value.upper()
+
+    if "HEALTH" in upper or "SAFETY" in upper:
         return "Health and Safety"
-    elif "CUSTOMER" in s or "EXPERI" in s:
+
+    if "CUSTOMER" in upper or "EXPER" in upper:
         return "Customer Experience"
-    elif "LOGISTIC" in s:
+
+    if "LOGISTIC" in upper:
         return "Logistics"
-    elif "WORK" in s or "ORGAN" in s or "WORKPLACE" in s:
+
+    if "WORK" in upper or "ORGAN" in upper:
         return "Workplace Organization"
-    return str(val).strip()
 
-def normalize_status_value(val):
-    if pd.isna(val) or val is None:
+    return value
+
+
+def normalize_status_value(value):
+    if pd.isna(value) or value is None:
         return "Unknown"
-    s = str(val).strip().upper().replace(" ", "").replace("-", "").replace("_", "")
-    if "CLOSE" in s or "COMPLET" in s or "DONE" in s:
+
+    compact = (
+        str(value).strip().upper()
+        .replace(" ", "")
+        .replace("-", "")
+        .replace("_", "")
+    )
+
+    if any(word in compact for word in ("CLOSE", "COMPLET", "DONE")):
         return "Closed"
-    elif "PROG" in s or "OPEN" in s or "PEND" in s:
+
+    if any(word in compact for word in ("PROG", "OPEN", "PEND")):
         return "In Progress"
-    return str(val).strip().title()
 
-def read_file_bytes_safe(file_path):
-    """
-    Safely reads file bytes even if Microsoft Excel or OneDrive has the file open.
-    Uses Windows win32file sharing flags as fallback to bypass exclusive locking.
-    """
-    try:
-        with open(file_path, "rb") as f:
-            return f.read(), None
-    except PermissionError:
-        try:
-            import win32file
-            handle = win32file.CreateFile(
-                file_path,
-                win32file.GENERIC_READ,
-                win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE | win32file.FILE_SHARE_DELETE,
-                None,
-                win32file.OPEN_EXISTING,
-                win32file.FILE_ATTRIBUTE_NORMAL,
-                None,
-            )
-            file_size = win32file.GetFileSize(handle)
-            hr, data = win32file.ReadFile(handle, file_size)
-            win32file.CloseHandle(handle)
-            return bytes(data), None
-        except Exception as e:
-            return None, f"Excel file locked by another program: {e}"
-    except Exception as e:
-        return None, str(e)
+    return str(value).strip().title()
 
-def get_sheet_names_from_bytes(file_bytes):
-    try:
-        bio = io.BytesIO(file_bytes)
-        xl = pd.ExcelFile(bio)
-        return xl.sheet_names, None
-    except Exception as e:
-        return [], str(e)
 
 @st.cache_data(show_spinner=False)
 def load_dataframe_from_bytes(file_bytes, sheet_name):
-    """
-    Loads sheet data into a pandas DataFrame from raw bytes.
-    DataFrame is 100% pickle-serializable.
-    """
     try:
-        bio = io.BytesIO(file_bytes)
-        df = pd.read_excel(bio, sheet_name=sheet_name)
-        # Convert object columns to string to guarantee Arrow serialization compatibility
-        for col in df.columns:
-            if df[col].dtype == object or str(df[col].dtype).startswith("datetime"):
-                df[col] = df[col].astype(str)
+        df = pd.read_excel(
+            io.BytesIO(file_bytes),
+            sheet_name=sheet_name,
+        )
+
+        df = df.loc[
+            :, ~df.columns.astype(str).str.contains(r"^Unnamed")
+        ]
+
+        df.columns = [clean_column_name(c) for c in df.columns]
+
         return df, None
-    except Exception as e:
-        return None, str(e)
+
+    except Exception as exc:
+        return None, str(exc)
+
 
 def parse_observation_tracker(raw_df):
-    """
-    Parses and cleans the Observation Tracker sheet.
-    Detects criteria, status, and action category columns.
-    """
     if raw_df is None or raw_df.empty:
-        return None, "Empty dataset provided."
+        return None, "The selected Excel sheet is empty."
 
-    df = raw_df.loc[:, ~raw_df.columns.astype(str).str.contains("^Unnamed")].copy()
-    df.columns = [clean_column_name(c) for c in df.columns]
+    df = raw_df.copy()
 
-    # Detect Criteria Column
-    criteria_col = None
-    for col in df.columns:
-        c_upper = col.upper()
-        if "STANDARD" in c_upper or "CRETERIA" in c_upper or "CRITERIA" in c_upper or "CATEGORY" in c_upper:
-            criteria_col = col
-            break
+    criteria_col = next(
+        (
+            c for c in df.columns
+            if any(
+                key in c.upper()
+                for key in (
+                    "STANDARD", "CRITERIA", "CRETERIA", "CATEGORY"
+                )
+            )
+        ),
+        None,
+    )
+
     if not criteria_col:
         for col in df.columns:
-            sample_vals = " ".join(df[col].dropna().astype(str).head(10).tolist()).upper()
-            if "HEALTH" in sample_vals or "CUSTOMER" in sample_vals or "LOGISTIC" in sample_vals:
+            sample = " ".join(
+                df[col].astype(str).head(15)
+            ).upper()
+
+            if any(
+                key in sample
+                for key in (
+                    "HEALTH", "CUSTOMER", "LOGISTIC", "WORKPLACE"
+                )
+            ):
                 criteria_col = col
                 break
 
-    # Detect Status Column
-    status_col = None
-    for col in df.columns:
-        if "STATUS" in col.upper():
-            status_col = col
-            break
-
-    # Detect Action Category Column (ACTION CATEGREY)
-    action_cat_col = None
-    for col in df.columns:
-        c_u = col.upper()
-        if "ACTION" in c_u and ("CATEG" in c_u or "TYPE" in c_u or "CLASS" in c_u):
-            action_cat_col = col
-            break
-
-    # Detect Station Column
-    station_col = None
-    for col in df.columns:
-        if "STATION" in col.upper():
-            station_col = col
-            break
-
-    # Detect Lead Column
-    lead_col = None
-    for col in df.columns:
-        if "RESP" in col.upper() or "LEAD" in col.upper() or "PILOT" in col.upper():
-            lead_col = col
-            break
-
-    # Detect Observation text column
-    obs_col = None
-    for col in df.columns:
-        if "OBSERVATION" in col.upper() and "DATE" not in col.upper():
-            obs_col = col
-            break
+    status_col = next(
+        (c for c in df.columns if "STATUS" in c.upper()),
+        None,
+    )
 
     if not criteria_col or not status_col:
-        return None, "Could not detect Standard Criteria or Status columns in selected sheet."
+        return None, (
+            "Could not detect the Standard Criteria and Status "
+            "columns in this sheet."
+        )
 
-    # Normalized fields
+    action_col = next(
+        (
+            c for c in df.columns
+            if "ACTION" in c.upper()
+            and any(
+                key in c.upper()
+                for key in ("CATEG", "TYPE", "CLASS")
+            )
+        ),
+        None,
+    )
+
+    station_col = next(
+        (c for c in df.columns if "STATION" in c.upper()),
+        None,
+    )
+
+    lead_col = next(
+        (
+            c for c in df.columns
+            if any(key in c.upper() for key in ("RESP", "LEAD", "PILOT"))
+        ),
+        None,
+    )
+
+    observation_col = next(
+        (
+            c for c in df.columns
+            if "OBSERVATION" in c.upper()
+            and "DATE" not in c.upper()
+        ),
+        None,
+    )
+
     df["Category"] = df[criteria_col].apply(normalize_category_value)
     df["Clean_Status"] = df[status_col].apply(normalize_status_value)
 
-    if action_cat_col:
+    if action_col:
         df["Action_Category"] = (
-            df[action_cat_col]
+            df[action_col]
             .fillna("Unassigned")
             .astype(str)
             .str.strip()
-            .str.title()
-            .replace({"Standrad": "Standard", "Nan": "Unassigned"})
+            .replace({"": "Unassigned", "nan": "Unassigned"})
         )
     else:
         df["Action_Category"] = "General"
 
     if station_col:
-        df["Station"] = df[station_col].fillna("Unknown").astype(str).str.strip()
+        df["Station"] = (
+            df[station_col].fillna("Unknown").astype(str).str.strip()
+        )
     else:
         df["Station"] = "General"
 
     if lead_col:
-        df["Lead"] = df[lead_col].fillna("Unassigned").astype(str).str.strip()
+        df["Lead"] = (
+            df[lead_col].fillna("Unassigned").astype(str).str.strip()
+        )
     else:
         df["Lead"] = "Unassigned"
 
-    if obs_col:
-        df["Observation_Text"] = df[obs_col].fillna("").astype(str).str.strip()
+    if observation_col:
+        df["Observation_Text"] = (
+            df[observation_col].fillna("").astype(str).str.strip()
+        )
     else:
         df["Observation_Text"] = ""
 
     return df, None
 
-# ==============================================================================
-# Sidebar: File Management & Interactive Filters
-# ==============================================================================
+
+def extract_station_assessment(file_bytes):
+    default = {
+        "overall": 44,
+        "in_progress": 30,
+        "completed": 14,
+        "details_df": pd.DataFrame(),
+    }
+
+    if not file_bytes:
+        return default
+
+    try:
+        excel = pd.ExcelFile(io.BytesIO(file_bytes))
+
+        target_sheet = next(
+            (
+                sheet for sheet in (
+                    "STATION WISE PROGRESS (2)",
+                    "STATION WISE PROGRESS",
+                )
+                if sheet in excel.sheet_names
+            ),
+            None,
+        )
+
+        if not target_sheet:
+            return default
+
+        df = pd.read_excel(
+            io.BytesIO(file_bytes),
+            sheet_name=target_sheet,
+        )
+
+        if df.empty:
+            return default
+
+        station_col = df.columns[0]
+        station_df = df.dropna(subset=[station_col]).copy()
+
+        station_df = station_df[
+            station_df[station_col].astype(str).str.strip().str.upper()
+            != "STATION #"
+        ]
+
+        observation_col = next(
+            (
+                c for c in station_df.columns
+                if "OBSERVATION" in str(c).upper()
+                or (
+                    len(df) > 0
+                    and "OBSERVATION" in str(df[c].iloc[0]).upper()
+                )
+            ),
+            None,
+        )
+
+        completion_col = next(
+            (
+                c for c in station_df.columns
+                if "COMPLETION" in str(c).upper()
+                or (
+                    len(df) > 0
+                    and "COMPLETION" in str(df[c].iloc[0]).upper()
+                )
+                or "%" in str(c)
+            ),
+            None,
+        )
+
+        total = len(station_df)
+        completed = 0
+        in_progress = 0
+
+        if observation_col:
+            status = (
+                station_df[observation_col]
+                .astype(str).str.strip().str.lower()
+            )
+
+            completed = int(
+                status.isin(
+                    ["completed", "complete", "closed", "done"]
+                ).sum()
+            )
+
+            in_progress = int(
+                status.isin(
+                    ["inprogress", "in progress", "progress"]
+                ).sum()
+            )
+
+        elif completion_col:
+            completion = pd.to_numeric(
+                station_df[completion_col],
+                errors="coerce",
+            ).fillna(0)
+
+            completed = int((completion >= 1).sum())
+            in_progress = total - completed
+
+        details = pd.DataFrame({
+            "Station": station_df[station_col].astype(str).str.strip(),
+            "Status": (
+                station_df[observation_col].astype(str).str.strip().str.title()
+                if observation_col else "In Progress"
+            ),
+            "Completion %": (
+                (
+                    pd.to_numeric(
+                        station_df[completion_col],
+                        errors="coerce",
+                    ).fillna(0) * 100
+                ).round(1).astype(str) + "%"
+                if completion_col else "N/A"
+            ),
+        })
+
+        return {
+            "overall": total,
+            "in_progress": in_progress,
+            "completed": completed,
+            "details_df": details,
+        }
+
+    except Exception:
+        return default
+
+
+def render_category_charts_pair(
+    category, icon, color, base_df, show_labels
+):
+    category_df = (
+        base_df[base_df["Category"] == category].copy()
+        if not base_df.empty else pd.DataFrame()
+    )
+
+    total = len(category_df)
+
+    closed = (
+        int((category_df["Clean_Status"] == "Closed").sum())
+        if total else 0
+    )
+
+    in_progress = (
+        int((category_df["Clean_Status"] == "In Progress").sum())
+        if total else 0
+    )
+
+    st.markdown(
+        f"""
+        <div style="background:white;border-left:5px solid {color};
+        border-radius:10px;padding:9px 14px;margin:10px 0 8px;
+        display:flex;justify-content:space-between;align-items:center;
+        gap:8px;flex-wrap:wrap;">
+            <div style="font-size:15px;font-weight:800;color:#0f172a;">
+                {icon} {category}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span class="badge-closed">{closed:,} Closed</span>
+                <span class="badge-prog">{in_progress:,} In Progress</span>
+                <span class="badge-affected">{total:,} Affected</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if category_df.empty:
+        st.info(
+            f"No records found for {category} with the current filters."
+        )
+        return
+
+    action_counts = (
+        category_df["Action_Category"]
+        .value_counts()
+        .sort_values(ascending=True)
+    )
+
+    left, right = st.columns(2, gap="small")
+
+    with left:
+        values = [closed, in_progress, total]
+        names = ["Closed", "In Progress", "Affected"]
+
+        fig = go.Figure(
+            go.Bar(
+                x=names,
+                y=values,
+                marker_color=["#10b981", "#f59e0b", "#2563eb"],
+                text=values if show_labels else None,
+                textposition="outside" if show_labels else "none",
+                cliponaxis=False,
+                hovertemplate="%{x}: %{y:,}<extra></extra>",
+            )
+        )
+
+        fig.update_layout(
+            title=f"<b>{category}: Status</b>",
+            height=250,
+            margin=dict(l=25, r=20, t=45, b=25),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(showgrid=False),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor="#edf2f7",
+                rangemode="tozero",
+            ),
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            theme=None,
+            config={"displayModeBar": False},
+        )
+
+    with right:
+        palette = {
+            "Facility": "#3b82f6",
+            "Process": "#06b6d4",
+            "Standard": "#8b5cf6",
+            "Training": "#f59e0b",
+            "Part": "#10b981",
+            "General": "#64748b",
+            "Unassigned": "#94a3b8",
+        }
+
+        action_names = action_counts.index.tolist()
+        action_values = action_counts.values.tolist()
+
+        fig = go.Figure(
+            go.Bar(
+                y=action_names,
+                x=action_values,
+                orientation="h",
+                marker_color=[
+                    palette.get(name, color) for name in action_names
+                ],
+                text=action_values if show_labels else None,
+                textposition="outside" if show_labels else "none",
+                cliponaxis=False,
+                hovertemplate="%{y}: %{x:,}<extra></extra>",
+            )
+        )
+
+        fig.update_layout(
+            title=f"<b>{category}: Action Category Items</b>",
+            height=250,
+            margin=dict(l=95, r=35, t=45, b=25),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            showlegend=False,
+            yaxis=dict(autorange="reversed", automargin=True),
+            xaxis=dict(
+                showgrid=True,
+                gridcolor="#edf2f7",
+                rangemode="tozero",
+            ),
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            theme=None,
+            config={"displayModeBar": False},
+        )
+
+
+# ============================================================
+# SIDEBAR: EXCEL DATA SOURCE AND FILTERS
+# ============================================================
 with st.sidebar:
     logo_b64 = get_logo_base64()
+
     if logo_b64:
-        st.markdown(
-            f'<div style="text-align:center; padding:6px 0 14px; border-bottom:1px solid #1e293b; margin-bottom:14px;"><img src="data:image/jpeg;base64,{logo_b64}" style="max-width:180px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.3);" alt="Stellantis" /></div>',
-            unsafe_allow_html=True
+        logo_ext = (
+            "png"
+            if os.path.exists("stellantis_logo.png")
+            or os.path.exists("logo.png")
+            else "jpeg"
         )
+
+        st.markdown(
+            f'<div style="text-align:center;padding:6px 0 14px;'
+            f'border-bottom:1px solid #1e293b;margin-bottom:14px;">'
+            f'<img src="data:image/{logo_ext};base64,{logo_b64}" '
+            f'style="max-width:180px;border-radius:8px;" '
+            f'alt="Stellantis"></div>',
+            unsafe_allow_html=True,
+        )
+
     st.markdown("## 📊 Data Source & Setup")
     st.caption("LOAD EXCEL FILE & RUN DASHBOARD")
 
     uploaded_file = st.file_uploader(
         "Upload Excel file (.xlsx, .xls)",
         type=["xlsx", "xls"],
-        help="Upload an updated Excel sheet to dynamically generate charts and tables.",
+        help="Upload an updated Excel workbook to generate the dashboard.",
     )
 
-    data_source_info = ""
     file_bytes = None
-    sheet_options = []
-    selected_sheet = None
-    raw_df = None
-    load_err = None
+    data_source_info = ""
     local_mtime = ""
+    sheet_options = []
+    raw_df = None
 
     if uploaded_file is not None:
         file_bytes = uploaded_file.getvalue()
         data_source_info = f"📤 Uploaded: {uploaded_file.name}"
-        sheet_options, s_err = get_sheet_names_from_bytes(file_bytes)
-        if s_err:
-            st.error(f"Error inspecting uploaded file: {s_err}")
-        else:
-            # Check for GitHub token for automated sync
-            gh_token = None
-            try:
-                if "GITHUB_TOKEN" in st.secrets:
-                    gh_token = st.secrets["GITHUB_TOKEN"]
-            except Exception:
-                pass
-            if not gh_token:
-                gh_token = os.environ.get("GITHUB_TOKEN")
 
-            if gh_token:
-                sync_key = f"gh_synced_{uploaded_file.name}_{len(file_bytes)}"
-                if sync_key not in st.session_state:
-                    with st.spinner("🚀 Syncing updated Excel to GitHub..."):
-                        synced, s_msg = sync_excel_to_github(file_bytes, GITHUB_TARGET_FILE, gh_token)
-                        if synced:
-                            st.session_state[sync_key] = True
-                            st.toast("✅ Auto-synced new Excel file to GitHub repository!", icon="🚀")
-                        else:
-                            st.warning(f"GitHub Sync Note: {s_msg}")
+        try:
+            sheet_options = pd.ExcelFile(
+                io.BytesIO(file_bytes)
+            ).sheet_names
+        except Exception as exc:
+            st.error(f"Error inspecting Excel file: {exc}")
+
+    elif os.path.exists(DEFAULT_EXCEL_PATH):
+        local_mtime = datetime.fromtimestamp(
+            os.path.getmtime(DEFAULT_EXCEL_PATH)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
+        data_source_info = f"📁 Local: {DEFAULT_EXCEL_PATH}"
+
+        try:
+            with open(DEFAULT_EXCEL_PATH, "rb") as excel_file:
+                file_bytes = excel_file.read()
+
+            sheet_options = pd.ExcelFile(
+                io.BytesIO(file_bytes)
+            ).sheet_names
+
+        except Exception as exc:
+            st.error(f"Could not read Excel file: {exc}")
+
     else:
-        if os.path.exists(DEFAULT_EXCEL_PATH):
-            mtime = os.path.getmtime(DEFAULT_EXCEL_PATH)
-            local_mtime = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
-            data_source_info = f"📁 Local: {DEFAULT_EXCEL_PATH}"
-            file_bytes, b_err = read_file_bytes_safe(DEFAULT_EXCEL_PATH)
-            if b_err:
-                st.error(b_err)
-            elif file_bytes:
-                sheet_options, s_err = get_sheet_names_from_bytes(file_bytes)
-                if s_err:
-                    st.error(f"Error reading sheets: {s_err}")
-        else:
-            st.error(f"Default file '{DEFAULT_EXCEL_PATH}' not found. Please upload an Excel file.")
+        st.warning(
+            f"Default file '{DEFAULT_EXCEL_PATH}' was not found. "
+            "Upload your Excel file."
+        )
 
-    c_reload, c_clear = st.columns([1, 1])
-    with c_reload:
-        if st.button("🔄 Refresh Data", use_container_width=True, help="Reread local file or uploaded Excel"):
-            st.cache_data.clear()
-            st.rerun()
+    if st.button("🔄 Refresh Data", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
 
     if data_source_info:
         st.markdown(
-            f"""
-            <div style="background:#1e293b;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11.5px;color:#cbd5e1">
-              <b>Source:</b> {data_source_info}<br/>
-              {f'<span style="color:#94a3b8">Updated: {local_mtime}</span>' if local_mtime else ''}
-            </div>
-            """,
+            f'<div style="background:#1e293b;border-radius:8px;'
+            f'padding:8px 12px;margin:8px 0;font-size:11.5px;'
+            f'color:#cbd5e1;"><b>Source:</b> {data_source_info}'
+            + (
+                f'<br><span style="color:#94a3b8;">Updated: '
+                f'{local_mtime}</span>'
+                if local_mtime else ""
+            )
+            + "</div>",
             unsafe_allow_html=True,
         )
 
     st.divider()
 
-    if sheet_options and file_bytes:
-        default_idx = 0
-        for idx, sname in enumerate(sheet_options):
-            if "OBSERVATION" in sname.upper() or "TRACKER" in sname.upper():
-                default_idx = idx
-                break
-        selected_sheet = st.selectbox("Excel Sheet to Analyze", sheet_options, index=default_idx)
+    selected_sheet = None
 
-        # Load Sheet Data safely from bytes
-        raw_loaded_df, load_err = load_dataframe_from_bytes(file_bytes, selected_sheet)
-        if load_err:
-            st.error(f"Error loading sheet: {load_err}")
+    if sheet_options and file_bytes:
+        default_index = next(
+            (
+                i for i, name in enumerate(sheet_options)
+                if "OBSERVATION" in name.upper()
+                or "TRACKER" in name.upper()
+            ),
+            0,
+        )
+
+        selected_sheet = st.selectbox(
+            "Excel Sheet to Analyze",
+            sheet_options,
+            index=default_index,
+        )
+
+        loaded_df, load_error = load_dataframe_from_bytes(
+            file_bytes,
+            selected_sheet,
+        )
+
+        if load_error:
+            st.error(f"Error loading sheet: {load_error}")
         else:
-            raw_df, parse_err = parse_observation_tracker(raw_loaded_df)
-            if parse_err:
-                st.warning(f"Note: {parse_err}")
+            raw_df, parse_error = parse_observation_tracker(loaded_df)
+
+            if parse_error:
+                st.warning(parse_error)
 
     st.markdown("### 🔍 Filters")
     st.caption("Apply filters across category views")
 
     filter_category = "All Categories"
-    selected_statuses = ["Closed", "In Progress"]
+    selected_statuses = []
     selected_actions = []
     search_keyword = ""
 
     if raw_df is not None and not raw_df.empty:
-        available_categories = ["All Categories"] + sorted([c for c in raw_df["Category"].dropna().unique().tolist() if c])
-        filter_category = st.selectbox("Standard Criteria / Category", available_categories, index=0)
-
-        available_statuses = sorted(raw_df["Clean_Status"].dropna().unique().tolist())
-        selected_statuses = st.multiselect(
-            "Status Filter",
-            options=available_statuses,
-            default=available_statuses,
+        categories = ["All Categories"] + sorted(
+            raw_df["Category"].dropna().unique().tolist()
         )
 
-        actions_list = sorted([a for a in raw_df["Action_Category"].dropna().unique().tolist() if a != "Unassigned"])
-        selected_actions = st.multiselect("Action Category Filter", options=actions_list, default=[])
+        filter_category = st.selectbox(
+            "Standard Criteria / Category",
+            categories,
+        )
 
-        search_keyword = st.text_input("Search Observation / Action", placeholder="Type keywords...")
+        statuses = sorted(
+            raw_df["Clean_Status"].dropna().unique().tolist()
+        )
+
+        selected_statuses = st.multiselect(
+            "Status Filter",
+            statuses,
+            default=statuses,
+        )
+
+        actions = sorted(
+            a for a in raw_df["Action_Category"].dropna().unique().tolist()
+            if a != "Unassigned"
+        )
+
+        selected_actions = st.multiselect(
+            "Action Category Filter",
+            actions,
+            default=[],
+        )
+
+        search_keyword = st.text_input(
+            "Search Observation / Action",
+            placeholder="Type keywords...",
+        )
 
     st.divider()
     st.markdown("### ⚙️ Chart Display Options")
-    chart_orientation = st.radio("2D Bar Orientation", ["Vertical", "Horizontal"], index=0)
-    show_data_labels = st.toggle("Show Values on Bars", value=True)
 
-# ==============================================================================
-# Apply Filters
-# ==============================================================================
+    chart_orientation = st.radio(
+        "2D Bar Orientation",
+        ["Vertical", "Horizontal"],
+        index=0,
+    )
+
+    show_data_labels = st.toggle(
+        "Show Values on Bars",
+        value=True,
+    )
+
+
+# ============================================================
+# APPLY FILTERS
+# ============================================================
 filtered_df = pd.DataFrame()
+
 if raw_df is not None and not raw_df.empty:
-    df_temp = raw_df.copy()
+    temp_df = raw_df.copy()
 
     if filter_category != "All Categories":
-        df_temp = df_temp[df_temp["Category"] == filter_category]
+        temp_df = temp_df[
+            temp_df["Category"] == filter_category
+        ]
 
     if selected_statuses:
-        df_temp = df_temp[df_temp["Clean_Status"].isin(selected_statuses)]
+        temp_df = temp_df[
+            temp_df["Clean_Status"].isin(selected_statuses)
+        ]
+    else:
+        temp_df = temp_df.iloc[0:0]
 
     if selected_actions:
-        df_temp = df_temp[df_temp["Action_Category"].isin(selected_actions)]
+        temp_df = temp_df[
+            temp_df["Action_Category"].isin(selected_actions)
+        ]
 
     if search_keyword.strip():
-        k = search_keyword.strip().lower()
-        obs_match = df_temp["Observation_Text"].str.lower().str.contains(k, na=False)
-        action_match = df_temp.get("ACTION DETAILS", pd.Series("", index=df_temp.index)).astype(str).str.lower().str.contains(k, na=False)
-        df_temp = df_temp[obs_match | action_match]
+        keyword = search_keyword.strip().lower()
 
-    filtered_df = df_temp
+        observation_match = (
+            temp_df["Observation_Text"]
+            .astype(str)
+            .str.lower()
+            .str.contains(keyword, na=False)
+        )
 
+        action_column = next(
+            (
+                c for c in temp_df.columns
+                if "ACTION DETAILS" in c.upper()
+            ),
+            None,
+        )
+
+        if action_column:
+            action_match = (
+                temp_df[action_column]
+                .astype(str)
+                .str.lower()
+                .str.contains(keyword, na=False)
+            )
+        else:
+            action_match = pd.Series(
+                False,
+                index=temp_df.index,
+            )
+
+        temp_df = temp_df[
+            observation_match | action_match
+        ]
+
+    filtered_df = temp_df
+
+
+# ============================================================
+# SUMMARY METRICS
+# ============================================================
 total_obs = len(raw_df) if raw_df is not None else 0
 filtered_total = len(filtered_df)
-closed_total = len(filtered_df[filtered_df["Clean_Status"] == "Closed"]) if not filtered_df.empty else 0
-inprogress_total = len(filtered_df[filtered_df["Clean_Status"] == "In Progress"]) if not filtered_df.empty else 0
-closure_rate = (closed_total / filtered_total * 100) if filtered_total > 0 else 0
 
-# ==============================================================================
-# Header Banner
-# ==============================================================================
+closed_total = (
+    int((filtered_df["Clean_Status"] == "Closed").sum())
+    if not filtered_df.empty else 0
+)
+
+inprogress_total = (
+    int((filtered_df["Clean_Status"] == "In Progress").sum())
+    if not filtered_df.empty else 0
+)
+
+closure_rate = (
+    closed_total / filtered_total * 100
+    if filtered_total else 0
+)
+
+progress_rate = (
+    inprogress_total / filtered_total * 100
+    if filtered_total else 0
+)
+
+# Count ONLY the four standard criteria.
+active_categories = (
+    filtered_df.loc[
+        filtered_df["Category"].isin(STANDARD_CATEGORIES),
+        "Category",
+    ].nunique()
+    if not filtered_df.empty else 0
+)
+
+
+# ============================================================
+# HEADER - NO STELLANTIS WPI OPERATIONS LABEL
+# ============================================================
 logo_b64 = get_logo_base64()
-logo_img_tag = f'<img src="data:image/jpeg;base64,{logo_b64}" style="height:74px; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.25); flex-shrink:0;" alt="Stellantis Logo" />' if logo_b64 else ''
+
+logo_ext = (
+    "png"
+    if os.path.exists("stellantis_logo.png")
+    or os.path.exists("logo.png")
+    else "jpeg"
+)
+
+logo_tag = (
+    f'<img src="data:image/{logo_ext};base64,{logo_b64}" '
+    f'style="height:70px;border-radius:10px;flex-shrink:0;" '
+    f'alt="Stellantis Logo">'
+    if logo_b64 else ""
+)
 
 st.markdown(
     f"""
-    <div class="hero-banner" style="display:flex; align-items:center; gap:22px; flex-wrap:nowrap;">
-      {logo_img_tag}
-      <div style="flex-grow:1;">
-        <div class="hero-tag">STELLANTIS • WPI OPERATIONS</div>
-        <h1 style="margin:2px 0 6px 0; font-size:26px; font-weight:800; letter-spacing:-0.5px;">WORK PLACE INTEGRATION GENERAL ASSEMBELY</h1>
-        <p style="font-size:15px; font-weight:600; color:#e0f2fe; margin:0;">Standard Criteria & Station Assessment Dashboard</p>
-      </div>
+    <div class="hero-banner"
+         style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
+        {logo_tag}
+        <div style="flex:1;min-width:260px;">
+            <h1>WORKPLACE INTEGRATION – CC22 LHD</h1>
+            <p>STANDARD CRITERIA</p>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;
+                        color:#bfdbfe;text-transform:uppercase;">
+                In Last
+            </div>
+            <div style="font-size:20px;font-weight:800;color:#ffffff;">
+                GENERAL ASSEMBLY
+            </div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Top KPI Metric Cards
-k1, k2, k3, k4 = st.columns(4)
-with k1:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-          <div class="metric-label"><span>AFFECTED OBSERVATIONS</span><span>📋</span></div>
-          <div class="metric-value" style="color:#0f172a">{filtered_total:,}</div>
-          <div class="metric-sub">{f"Filtered from {total_obs:,} total" if filtered_total != total_obs else "Total observation scope"}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
-with k2:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-          <div class="metric-label"><span>CLOSED ITEMS</span><span>✅</span></div>
-          <div class="metric-value" style="color:#10b981">{closed_total:,}</div>
-          <div class="metric-sub"><span style="color:#10b981;font-weight:700">{closure_rate:.1f}%</span> completed of filtered</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+# ============================================================
+# TOP KPI CARDS
+# ============================================================
+k1, k2, k3, k4 = st.columns(4, gap="small")
 
-with k3:
-    prog_pct = (inprogress_total / filtered_total * 100) if filtered_total > 0 else 0
-    st.markdown(
-        f"""
-        <div class="metric-card">
-          <div class="metric-label"><span>IN PROGRESS ITEMS</span><span>⏳</span></div>
-          <div class="metric-value" style="color:#f59e0b">{inprogress_total:,}</div>
-          <div class="metric-sub"><span style="color:#f59e0b;font-weight:700">{prog_pct:.1f}%</span> currently active</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+cards = [
+    (
+        "AFFECTED OBSERVATIONS",
+        f"{filtered_total:,}",
+        "#0f172a",
+        "Filtered from total"
+        if filtered_total != total_obs
+        else "Total observation scope",
+        "📋",
+    ),
+    (
+        "CLOSED ITEMS",
+        f"{closed_total:,}",
+        "#10b981",
+        f"{closure_rate:.1f}% completed of filtered",
+        "✅",
+    ),
+    (
+        "IN PROGRESS ITEMS",
+        f"{inprogress_total:,}",
+        "#f59e0b",
+        f"{progress_rate:.1f}% currently active",
+        "⏳",
+    ),
+    (
+        "CRITERIA CATEGORIES",
+        "4",
+        "#2563eb",
+        "Four standard criteria",
+        "🏷️",
+    ),
+]
 
-with k4:
-    active_cats = filtered_df["Category"].nunique() if not filtered_df.empty else 0
-    st.markdown(
-        f"""
-        <div class="metric-card">
-          <div class="metric-label"><span>CRITERIA CATEGORIES</span><span>🏷️</span></div>
-          <div class="metric-value" style="color:#2563eb">{active_cats}</div>
-          <div class="metric-sub">Active categories analyzed</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-st.write("")
-
-# ==============================================================================
-# Helper Function: Render Category Action Charts Pair
-# Left (Chart 1): Status Overview Column Chart (Closed, In Progress, Affected)
-# Right (Chart 2): Action Category Horizontal Bar Chart (Total Items per Action)
-# Compact small-size charts with fully visible text labels
-# ==============================================================================
-def render_category_charts_pair(cat_name, cat_icon, cat_color, base_df):
-    cat_df = base_df[base_df["Category"] == cat_name].copy() if not base_df.empty else pd.DataFrame()
-    c_total = len(cat_df)
-    c_closed = len(cat_df[cat_df["Clean_Status"] == "Closed"]) if c_total > 0 else 0
-    c_inprog = len(cat_df[cat_df["Clean_Status"] == "In Progress"]) if c_total > 0 else 0
-
-    st.markdown(
-        f"""
-        <div style="background:white;border-left:5px solid {cat_color};border-radius:10px;padding:8px 14px;margin-top:12px;margin-bottom:8px;box-shadow:0 2px 6px rgba(15,23,42,0.04);display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:15px;font-weight:800;color:#0f172a;">{cat_icon} {cat_name}</div>
-          <div style="display:flex;gap:6px;">
-            <span class="badge-closed">{c_closed} Closed</span>
-            <span class="badge-prog">{c_inprog} In Progress</span>
-            <span class="badge-affected">{c_total} Affected</span>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if c_total == 0:
-        st.info(f"No records found for '{cat_name}' with the current filters.")
-        return
-
-    # Action categories counts
-    act_counts = (
-        cat_df["Action_Category"]
-        .value_counts()
-        .reset_index()
-    )
-    act_counts.columns = ["Action_Category", "Total"]
-    act_counts = act_counts.sort_values("Total", ascending=False)
-    act_names = act_counts["Action_Category"].tolist()
-    act_totals = [int(v) for v in act_counts["Total"]]
-
-    c_left, c_right = st.columns([1, 1], gap="medium")
-
-    # ------------------ LEFT (CHART 1): STATUS OVERVIEW (CLOSED, IN PROGRESS, AFFECTED) ------------------
-    with c_left:
-        stat_cats = ["Closed", "In Progress", "Affected"]
-        stat_vals = [c_closed, c_inprog, c_total]
-        stat_colors = ["#10b981", "#f59e0b", "#2563eb"]  # Green, Amber, Blue
-
-        fig_status = go.Figure()
-        fig_status.add_trace(
-            go.Bar(
-                x=stat_cats,
-                y=stat_vals,
-                marker=dict(color=stat_colors, line=dict(width=0)),
-                text=[f"{v:,}" for v in stat_vals] if show_data_labels else None,
-                textposition="outside" if show_data_labels else "none",
-                cliponaxis=False,
-                textfont=dict(size=10.5, color="#0f172a", weight=700),
-                hovertemplate="<b>%{x}</b><br>Count: <b>%{y:,}</b><extra></extra>",
-            )
+for col, (label, value, color, sub, icon) in zip(
+    (k1, k2, k3, k4),
+    cards,
+):
+    with col:
+        st.markdown(
+            f'<div class="metric-card">'
+            f'<div class="metric-label"><span>{label}</span>'
+            f'<span>{icon}</span></div>'
+            f'<div class="metric-value" style="color:{color}">'
+            f'{value}</div>'
+            f'<div class="metric-sub">{sub}</div></div>',
+            unsafe_allow_html=True,
         )
-        fig_status.update_layout(
-            title=dict(text=f"<b>{cat_name}: Status (Closed, In Progress, Affected)</b>", font=dict(size=12, color="#0f172a"), x=0.01, y=0.96),
-            height=240,
-            margin=dict(l=25, r=20, t=32, b=20),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            font=dict(family="Inter, sans-serif"),
-            showlegend=False,
-            xaxis=dict(showgrid=False, zeroline=False, tickfont=dict(size=10.5, color="#1e293b", weight=700)),
-            yaxis=dict(showgrid=True, gridcolor="#edf2f7", zeroline=False, title=dict(text="Count", font=dict(size=10.5, color="#64748b"))),
-        )
-        st.plotly_chart(fig_status, use_container_width=True, theme=None, config={"displayModeBar": False})
 
-    # ------------------ RIGHT (CHART 2): ACTION CATEGORY TOTAL ITEMS (HORIZONTAL) ------------------
-    with c_right:
-        ACTION_PALETTE = {
-            "Facility": "#3b82f6",     # Blue
-            "Process": "#06b6d4",      # Cyan
-            "Standard": "#8b5cf6",     # Purple
-            "Training": "#f59e0b",     # Amber
-            "Part": "#10b981",         # Emerald
-            "General": "#64748b",      # Slate
-            "Unassigned": "#94a3b8",   # Gray
-        }
-        bar_colors = [ACTION_PALETTE.get(a, cat_color) for a in act_names]
 
-        fig_horiz = go.Figure()
-        fig_horiz.add_trace(
-            go.Bar(
-                name="Total Items",
-                y=act_names,
-                x=act_totals,
-                orientation="h",
-                marker=dict(color=bar_colors, line=dict(width=0)),
-                text=[f"{v:,}" for v in act_totals] if show_data_labels else None,
-                textposition="outside" if show_data_labels else "none",
-                cliponaxis=False,
-                textfont=dict(size=10.5, color="#0f172a", weight=700),
-                hovertemplate="<b>Action Category:</b> %{y}<br>Total Items: <b>%{x:,}</b><extra></extra>",
-            )
-        )
-        fig_horiz.update_layout(
-            title=dict(text=f"<b>{cat_name}: Action Category Total Items</b>", font=dict(size=12, color="#0f172a"), x=0.01, y=0.96),
-            height=240,
-            margin=dict(l=95, r=40, t=32, b=20),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            font=dict(family="Inter, sans-serif"),
-            showlegend=False,
-            yaxis=dict(autorange="reversed", showgrid=False, tickfont=dict(size=10.5, color="#1e293b", weight=600)),
-            xaxis=dict(showgrid=True, gridcolor="#edf2f7", zeroline=False, title=dict(text="Total Items", font=dict(size=10.5, color="#64748b"))),
-        )
-        st.plotly_chart(fig_horiz, use_container_width=True, theme=None, config={"displayModeBar": False})
-
-# ==============================================================================
-# Dashboard Tabs Setup
-# Tab 1: 📊 All Charts Dashboard (All Category Charts in Home Page) [DEFAULT]
-# Tab 2: 📁 Raw Data Explorer & Export
-# ==============================================================================
+# ============================================================
+# DASHBOARD TABS
+# ============================================================
 tab_home, tab_explorer = st.tabs([
     "📊 Standard Criteria & Station Dashboard",
     "📁 Raw Data Explorer & Export",
 ])
 
-# ------------------------------------------------------------------------------
-# TAB 1: ALL CHARTS DASHBOARD (HOME PAGE)
-# ALL CATEGORY CHARTS DISPLAYED DIRECTLY ON HOME PAGE (NO TABLES, PURE CHARTS)
-# ------------------------------------------------------------------------------
+
+# ============================================================
+# HOME DASHBOARD
+# ============================================================
 with tab_home:
 
-    # Section Header
+    # Full-width section heading
     st.markdown(
         """
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">
-          <div style="font-size:18px; font-weight:800; color:#0f172a;">Standard Criteria & Station Assessment Overview</div>
-          <div style="font-size:12px; color:#64748b; font-weight:600;">50% / 50% Synchronized Side-by-Side Analytics</div>
+        <div style="width:100%;margin:0 0 10px;padding:0 0 8px;
+                    border-bottom:2px solid #e2e8f0;">
+            <div style="font-size:20px;font-weight:800;color:#0f172a;">
+                Standard Criteria & Station Assessment Overview
+            </div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    # TWO COLUMNS ALONGSIDE EACH OTHER (50% / 50% width):
-    # Left: Station Assessment (automatic Excel extraction, metrics, progress, 2D bar chart)
-    # Right: Overall 4 Categories Dashboard (2D clustered chart, complete summary table with zero cutoff)
-    c_left_station, c_right_criteria = st.columns([1, 1], gap="medium")
+    # --------------------------------------------------------
+    # OVERALL CRITERIA: FULL WIDTH, TOTAL AFFECTED ONLY
+    # --------------------------------------------------------
+    st.markdown(
+        '<div class="home-panel-title">📊 Overall Criteria</div>'
+        '<div class="home-panel-sub">'
+        'Total affected observations across all four standard criteria'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    # ========================== LEFT: STATION ASSESSMENT ==========================
-    with c_left_station:
-        st.markdown(
-            """
-            <div class="home-panel-title">🏢 Station Assessment</div>
-            <div class="home-panel-sub">LHD affected station assessment status · Automatic Excel extraction</div>
-            """,
-            unsafe_allow_html=True,
+    if filtered_df.empty:
+        st.warning(
+            "No observation data loaded. Check the Excel file and filters."
+        )
+    else:
+        criteria_df = filtered_df[
+            filtered_df["Category"].isin(STANDARD_CATEGORIES)
+        ]
+
+        category_totals = (
+            criteria_df.groupby("Category")
+            .size()
+            .reindex(STANDARD_CATEGORIES, fill_value=0)
+            .sort_values(ascending=False)
         )
 
-        # Extract live station assessment from Excel
-        station_data = extract_station_assessment(file_bytes)
-        extracted_overall = station_data.get('overall', 44)
-        extracted_ip = station_data.get('in_progress', 30)
-        extracted_comp = station_data.get('completed', 14)
-        station_details_df = station_data.get('details_df', pd.DataFrame())
+        names = category_totals.index.tolist()
+        totals = category_totals.astype(int).tolist()
 
-        # Form Inputs for Station Assessment
-        with st.expander("📝 View / Edit Station Assessment Values", expanded=False):
-            st.caption("Values are pre-populated directly from the Excel Station Progress sheet. You can adjust them if needed:")
-            l1_overall = st.number_input("Overall assessments", min_value=0, max_value=1000000, value=extracted_overall, step=1, key="l1_ov")
-            l1_in_progress = st.number_input("In progress", min_value=0, max_value=1000000, value=extracted_ip, step=1, key="l1_ip")
-            l1_completed = st.number_input("Completed", min_value=0, max_value=1000000, value=extracted_comp, step=1, key="l1_cp")
+        display_names = {
+            "Customer Experience": "Customer<br>Experience",
+            "Workplace Organization": "Workplace<br>Organization",
+            "Health and Safety": "Health &amp;<br>Safety",
+            "Logistics": "Logistics",
+        }
 
-            if l1_in_progress + l1_completed > l1_overall:
-                st.warning("⚠️ In progress + Completed exceeds Overall.")
+        fig = go.Figure()
 
-        l1_comp_rate = (l1_completed / l1_overall * 100) if l1_overall else 0
-        l1_ip_rate = (l1_in_progress / l1_overall * 100) if l1_overall else 0
-
-        # Station Assessment KPI cards
-        sk1, sk2, sk3 = st.columns(3)
-        with sk1:
-            st.markdown(
-                f'<div class="metric-card"><div class="metric-label">OVERALL</div><div class="metric-value" style="color:#2563eb">{l1_overall:,}</div><div class="metric-sub">Total Scope</div></div>',
-                unsafe_allow_html=True,
-            )
-        with sk2:
-            st.markdown(
-                f'<div class="metric-card"><div class="metric-label">IN PROGRESS</div><div class="metric-value" style="color:#f59e0b">{l1_in_progress:,}</div><div class="metric-sub">{l1_ip_rate:.1f}% active</div></div>',
-                unsafe_allow_html=True,
-            )
-        with sk3:
-            st.markdown(
-                f'<div class="metric-card"><div class="metric-label">COMPLETED</div><div class="metric-value" style="color:#10b981">{l1_completed:,}</div><div class="metric-sub">{l1_comp_rate:.1f}% done</div></div>',
-                unsafe_allow_html=True,
-            )
-
-        # Progress bar
-        st.markdown(
-            f"""
-            <div style="background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;font-weight:700;color:#334155;">Assessment Completion Rate</span>
-              <span style="font-size:15px;font-weight:800;color:#059669;">{l1_comp_rate:.1f}%</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.progress(min(l1_comp_rate / 100, 1.0))
-
-        # Station Assessment 2D Bar Chart
-        l1_cats = ["Overall", "In Progress", "Completed"]
-        l1_vals = [l1_overall, l1_in_progress, l1_completed]
-        l1_colors = ["#2563eb", "#f59e0b", "#10b981"]
-
-        fig_l1 = go.Figure()
         if chart_orientation == "Horizontal":
-            fig_l1.add_trace(
+            fig.add_trace(
                 go.Bar(
-                    y=l1_cats,
-                    x=l1_vals,
+                    y=names,
+                    x=totals,
                     orientation="h",
-                    marker=dict(color=l1_colors, line=dict(width=0)),
-                    text=[f"{v:,}" for v in l1_vals] if show_data_labels else None,
-                    textposition="outside" if show_data_labels else "none",
+                    marker_color="#2563eb",
+                    text=totals if show_data_labels else None,
+                    textposition=(
+                        "outside" if show_data_labels else "none"
+                    ),
                     cliponaxis=False,
-                    textfont=dict(size=11, weight=700),
-                    hovertemplate="<b>%{y}</b><br>Count: %{x:,}<extra></extra>",
+                    hovertemplate=(
+                        "<b>%{y}</b><br>"
+                        "Total Affected: %{x:,}<extra></extra>"
+                    ),
                 )
-            )
-            fig_l1.update_layout(
-                yaxis=dict(autorange="reversed", automargin=True, tickfont=dict(size=11, color="#1e293b", weight=700)),
-                xaxis=dict(showgrid=True, gridcolor="#edf1f7", zeroline=False, automargin=True, range=[0, max(l1_vals) * 1.25], title=dict(text="Stations Count", font=dict(size=11, color="#64748b"))),
-            )
-        else:
-            fig_l1.add_trace(
-                go.Bar(
-                    x=l1_cats,
-                    y=l1_vals,
-                    marker=dict(color=l1_colors, line=dict(width=0)),
-                    text=[f"{v:,}" for v in l1_vals] if show_data_labels else None,
-                    textposition="outside" if show_data_labels else "none",
-                    cliponaxis=False,
-                    textfont=dict(size=11, weight=700),
-                    hovertemplate="<b>%{x}</b><br>Count: %{y:,}<extra></extra>",
-                )
-            )
-            fig_l1.update_layout(
-                xaxis=dict(showgrid=False, zeroline=False, automargin=True, tickfont=dict(size=11, color="#1e293b", weight=700)),
-                yaxis=dict(showgrid=True, gridcolor="#edf1f7", zeroline=False, automargin=True, range=[0, max(l1_vals) * 1.25], title=dict(text="Stations Count", font=dict(size=11, color="#64748b"))),
             )
 
-        fig_l1.update_layout(
-            title=dict(text="<b>Station Assessment Status</b>", font=dict(size=13, color="#0f172a"), x=0.01, y=0.96),
-            height=250,
-            margin=dict(l=30, r=20, t=35, b=25),
+            fig.update_layout(
+                yaxis=dict(
+                    autorange="reversed",
+                    automargin=True,
+                ),
+                xaxis=dict(
+                    title="Total Affected",
+                    gridcolor="#edf2f7",
+                    rangemode="tozero",
+                ),
+            )
+
+        else:
+            fig.add_trace(
+                go.Bar(
+                    x=[
+                        display_names.get(name, name)
+                        for name in names
+                    ],
+                    y=totals,
+                    marker_color="#2563eb",
+                    text=totals if show_data_labels else None,
+                    textposition=(
+                        "outside" if show_data_labels else "none"
+                    ),
+                    cliponaxis=False,
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        "Total Affected: %{y:,}<extra></extra>"
+                    ),
+                )
+            )
+
+            fig.update_layout(
+                xaxis=dict(
+                    showgrid=False,
+                    automargin=True,
+                ),
+                yaxis=dict(
+                    title="Total Affected",
+                    gridcolor="#edf2f7",
+                    rangemode="tozero",
+                ),
+            )
+
+        fig.update_layout(
+            title=dict(
+                text="<b>Total Affected by Standard Criteria</b>",
+                font=dict(size=16, color="#0f172a"),
+                x=0.01,
+            ),
+            height=320,
+            margin=dict(l=35, r=35, t=55, b=35),
             paper_bgcolor="white",
             plot_bgcolor="white",
             showlegend=False,
-        )
-        st.plotly_chart(fig_l1, use_container_width=True, theme=None, config={"displayModeBar": False})
-
-        # Station Details List
-        if not station_details_df.empty:
-            with st.expander(f"📋 View All {len(station_details_df)} Station Details", expanded=False):
-                st.dataframe(station_details_df, use_container_width=True, hide_index=True, height=220)
-
-    # ========================== RIGHT: OVERALL 4 CATEGORIES (COMPLETE METRICS) ==========================
-    with c_right_criteria:
-        st.markdown(
-            """
-            <div class="home-panel-title">📊 Overall Criteria (All 4 Categories)</div>
-            <div class="home-panel-sub">Closed, In Progress & Total Affected Scope across all 4 standard criteria</div>
-            """,
-            unsafe_allow_html=True,
+            bargap=0.35,
         )
 
-        if filtered_df.empty:
-            st.warning("No observation data loaded. Check Excel file source.")
-        else:
-            # Pivot table for the 4 categories
-            cat_pivot = (
-                filtered_df.groupby(["Category", "Clean_Status"]).size().unstack(fill_value=0).reset_index()
-            )
-            if "Closed" not in cat_pivot.columns:
-                cat_pivot["Closed"] = 0
-            if "In Progress" not in cat_pivot.columns:
-                cat_pivot["In Progress"] = 0
-            cat_pivot["Total Affected"] = cat_pivot["Closed"] + cat_pivot["In Progress"]
-            cat_pivot["Completion_Rate"] = (
-                (cat_pivot["Closed"] / cat_pivot["Total Affected"] * 100).fillna(0).round(1)
-            )
+        # Uses the full available content width.
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            theme=None,
+            config={"displayModeBar": False},
+        )
 
-            # Ensure all 4 standard categories appear
-            for cat_name in STANDARD_CATEGORIES:
-                if cat_name not in cat_pivot["Category"].values:
-                    cat_pivot = pd.concat([
-                        cat_pivot,
-                        pd.DataFrame([{"Category": cat_name, "Closed": 0, "In Progress": 0, "Total Affected": 0, "Completion_Rate": 0.0}])
-                    ], ignore_index=True)
+    # --------------------------------------------------------
+    # STATION ASSESSMENT: BELOW CHART, 50% WIDTH
+    # --------------------------------------------------------
+    station_data = extract_station_assessment(file_bytes)
 
-            cat_pivot = cat_pivot[cat_pivot["Category"].isin(STANDARD_CATEGORIES)].copy()
-            cat_pivot = cat_pivot.sort_values("Total Affected", ascending=False).reset_index(drop=True)
+    extracted_overall = int(station_data["overall"])
+    extracted_ip = int(station_data["in_progress"])
+    extracted_comp = int(station_data["completed"])
 
-            cat_names = cat_pivot["Category"].tolist()
-            closed_vals = [int(v) for v in cat_pivot["Closed"]]
-            inprog_vals = [int(v) for v in cat_pivot["In Progress"]]
-            affected_vals = [int(v) for v in cat_pivot["Total Affected"]]
+    station_details_df = station_data["details_df"]
 
-            # Line-break formatted labels for vertical mode to ensure NEVER truncated!
-            cat_display_names = []
-            for c in cat_names:
-                if c == "Customer Experience":
-                    cat_display_names.append("Customer<br>Experience")
-                elif c == "Workplace Organization":
-                    cat_display_names.append("Workplace<br>Organization")
-                elif c == "Health and Safety":
-                    cat_display_names.append("Health &<br>Safety")
-                else:
-                    cat_display_names.append(c)
-
-            fig_overall = go.Figure()
-            max_overall = max(affected_vals) if affected_vals else 100
-
-            if chart_orientation == "Vertical":
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="Closed",
-                        x=cat_display_names,
-                        y=closed_vals,
-                        marker=dict(color="#10b981", line=dict(width=0)),
-                        text=[f"{v:,}" for v in closed_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{x}</b><br>Closed: %{y:,}<extra></extra>",
-                    )
-                )
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="In Progress",
-                        x=cat_display_names,
-                        y=inprog_vals,
-                        marker=dict(color="#f59e0b", line=dict(width=0)),
-                        text=[f"{v:,}" for v in inprog_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{x}</b><br>In Progress: %{y:,}<extra></extra>",
-                    )
-                )
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="Total Affected",
-                        x=cat_display_names,
-                        y=affected_vals,
-                        marker=dict(color="#2563eb", line=dict(width=0)),
-                        text=[f"{v:,}" for v in affected_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{x}</b><br>Total Affected: %{y:,}<extra></extra>",
-                    )
-                )
-                fig_overall.update_layout(
-                    barmode="group",
-                    bargap=0.2,
-                    bargroupgap=0.08,
-                    xaxis=dict(showgrid=False, zeroline=False, automargin=True, tickfont=dict(size=11, color="#1e293b", weight=700)),
-                    yaxis=dict(showgrid=True, gridcolor="#edf2f7", zeroline=False, automargin=True, range=[0, max_overall * 1.22], title=dict(text="Observations Count", font=dict(size=11, color="#64748b"))),
-                )
-            else:
-                # Horizontal orientation
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="Closed",
-                        y=cat_names,
-                        x=closed_vals,
-                        orientation="h",
-                        marker=dict(color="#10b981", line=dict(width=0)),
-                        text=[f"{v:,}" for v in closed_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{y}</b><br>Closed: %{x:,}<extra></extra>",
-                    )
-                )
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="In Progress",
-                        y=cat_names,
-                        x=inprog_vals,
-                        orientation="h",
-                        marker=dict(color="#f59e0b", line=dict(width=0)),
-                        text=[f"{v:,}" for v in inprog_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{y}</b><br>In Progress: %{x:,}<extra></extra>",
-                    )
-                )
-                fig_overall.add_trace(
-                    go.Bar(
-                        name="Total Affected",
-                        y=cat_names,
-                        x=affected_vals,
-                        orientation="h",
-                        marker=dict(color="#2563eb", line=dict(width=0)),
-                        text=[f"{v:,}" for v in affected_vals] if show_data_labels else None,
-                        textposition="outside" if show_data_labels else "none",
-                        cliponaxis=False,
-                        textfont=dict(size=10, weight=700),
-                        hovertemplate="<b>%{y}</b><br>Total Affected: %{x:,}<extra></extra>",
-                    )
-                )
-                fig_overall.update_layout(
-                    barmode="group",
-                    bargap=0.2,
-                    bargroupgap=0.08,
-                    yaxis=dict(autorange="reversed", automargin=True, tickfont=dict(size=11, color="#1e293b", weight=700)),
-                    xaxis=dict(showgrid=True, gridcolor="#edf2f7", zeroline=False, automargin=True, range=[0, max_overall * 1.22], title=dict(text="Observations Count", font=dict(size=11, color="#64748b"))),
-                )
-
-            fig_overall.update_layout(
-                title=dict(text="<b>Overall Criteria Status Breakdown</b>", font=dict(size=13, color="#0f172a"), x=0.01, y=0.96),
-                height=250,
-                margin=dict(l=35, r=25, t=42, b=25),
-                paper_bgcolor="white",
-                plot_bgcolor="white",
-                font=dict(family="Inter, sans-serif"),
-                legend=dict(orientation="h", y=1.18, x=0.01, font=dict(size=10.5, weight=600)),
-            )
-            st.plotly_chart(fig_overall, use_container_width=True, theme=None, config={"displayModeBar": False})
-
-            # Full Data Summary Table ensuring NO data is hidden and NO names are cut off!
-            table_html = """
-            <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;margin-top:6px;box-shadow:0 1px 4px rgba(15,23,42,0.03);">
-              <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
-                <thead>
-                  <tr style="background:#f1f5f9;color:#334155;border-bottom:1.5px solid #cbd5e1;">
-                    <th style="padding:7px 10px;font-weight:700;">Standard Criteria</th>
-                    <th style="padding:7px 10px;font-weight:700;text-align:center;">Closed</th>
-                    <th style="padding:7px 10px;font-weight:700;text-align:center;">In Progress</th>
-                    <th style="padding:7px 10px;font-weight:700;text-align:center;">Total Affected</th>
-                    <th style="padding:7px 10px;font-weight:700;text-align:right;">Closure %</th>
-                  </tr>
-                </thead>
-                <tbody>
-            """
-            for _, r in cat_pivot.iterrows():
-                c_name = r["Category"]
-                cl = int(r["Closed"])
-                ip = int(r["In Progress"])
-                tot = int(r["Total Affected"])
-                rate = r["Completion_Rate"]
-                table_html += f"""
-                  <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:6px 10px;font-weight:600;color:#0f172a;">{c_name}</td>
-                    <td style="padding:6px 10px;text-align:center;"><span class="badge-closed">{cl:,}</span></td>
-                    <td style="padding:6px 10px;text-align:center;"><span class="badge-prog">{ip:,}</span></td>
-                    <td style="padding:6px 10px;text-align:center;"><span class="badge-affected">{tot:,}</span></td>
-                    <td style="padding:6px 10px;text-align:right;font-weight:700;color:#059669;">{rate:.1f}%</td>
-                  </tr>
-                """
-            
-            # Add Grand Total Row
-            gt_closed = sum(closed_vals)
-            gt_inprog = sum(inprog_vals)
-            gt_total = sum(affected_vals)
-            gt_rate = (gt_closed / gt_total * 100) if gt_total > 0 else 0
-            table_html += f"""
-                  <tr style="background:#f8fafc;font-weight:800;border-top:1.5px solid #cbd5e1;">
-                    <td style="padding:7px 10px;color:#0f172a;">Grand Total</td>
-                    <td style="padding:7px 10px;text-align:center;color:#15803d;">{gt_closed:,}</td>
-                    <td style="padding:7px 10px;text-align:center;color:#b45309;">{gt_inprog:,}</td>
-                    <td style="padding:7px 10px;text-align:center;color:#1e40af;">{gt_total:,}</td>
-                    <td style="padding:7px 10px;text-align:right;color:#059669;font-weight:800;">{gt_rate:.1f}%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            """
-            st.markdown(table_html, unsafe_allow_html=True)
-
-    # --------------------------------------------------------------------------
-    # ALL 4 CATEGORIES DETAILED CHARTS ON HOME PAGE (LEFT: COLUMN-WISE, RIGHT: HORIZONTAL)
-    # --------------------------------------------------------------------------
     st.markdown(
-        """
-        <div style="margin-top:22px; margin-bottom:12px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">
-          <div style="font-size:18px; font-weight:800; color:#0f172a;">Standard Criteria Detailed Analytics (All 4 Categories)</div>
-          <div style="font-size:12px; color:#64748b; font-weight:500;">Status Breakdown & Action Categories for each Criteria</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+        '<div class="home-panel-title">🏢 Station Assessment</div>'
+        '<div class="home-panel-sub">'
+        'Station assessment status extracted from Excel'
+        '</div>',
+        unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
+    with st.expander("📝 View / Edit Station Assessment Values"):
+        st.caption("Values extracted from the station progress sheet.")
 
-    # 1. Health and Safety
-    render_category_charts_pair("Health and Safety", "🛡️", "#ef4444", filtered_df)
+        l1_overall = st.number_input(
+            "Overall assessments",
+            min_value=0,
+            max_value=1000000,
+            value=extracted_overall,
+            step=1,
+            key="station_overall",
+        )
 
-    # 2. Customer Experience
-    render_category_charts_pair("Customer Experience", "⭐", "#6366f1", filtered_df)
+        l1_in_progress = st.number_input(
+            "In progress",
+            min_value=0,
+            max_value=1000000,
+            value=extracted_ip,
+            step=1,
+            key="station_inprogress",
+        )
 
-    # 3. Workplace Organization
-    render_category_charts_pair("Workplace Organization", "🏢", "#059669", filtered_df)
+        l1_completed = st.number_input(
+            "Completed",
+            min_value=0,
+            max_value=1000000,
+            value=extracted_comp,
+            step=1,
+            key="station_completed",
+        )
 
-    # 4. Logistics
-    render_category_charts_pair("Logistics", "🚚", "#0284c7", filtered_df)
+        if l1_in_progress + l1_completed > l1_overall:
+            st.warning("In Progress + Completed exceeds Overall.")
 
-# ------------------------------------------------------------------------------
-# TAB 2: GLOBAL DATA EXPLORER & EXPORT
-# ------------------------------------------------------------------------------
+    completion_rate = (
+        l1_completed / l1_overall * 100 if l1_overall else 0
+    )
+    progress_rate_station = (
+        l1_in_progress / l1_overall * 100 if l1_overall else 0
+    )
+
+    # Balanced two-panel layout fills the available page width.
+    station_left, station_right = st.columns([0.95, 1.35], gap="medium")
+
+    with station_left:
+        s1, s2, s3 = st.columns(3, gap="small")
+
+        station_cards = [
+            (s1, "OVERALL", l1_overall, "#2563eb", "Total scope"),
+            (s2, "IN PROGRESS", l1_in_progress, "#f59e0b",
+             f"{progress_rate_station:.1f}% active"),
+            (s3, "COMPLETED", l1_completed, "#10b981",
+             f"{completion_rate:.1f}% done"),
+        ]
+
+        for col, label, value, color, sub in station_cards:
+            with col:
+                st.markdown(
+                    f'<div class="metric-card">'
+                    f'<div class="metric-label">{label}</div>'
+                    f'<div class="metric-value" style="color:{color}">'
+                    f'{value:,}</div>'
+                    f'<div class="metric-sub">{sub}</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+        st.markdown(
+            f'<div style="background:white;padding:12px 14px;'
+            f'border-radius:10px;border:1px solid #e2e8f0;'
+            f'margin:4px 0 10px;display:flex;'
+            f'justify-content:space-between;align-items:center;gap:12px;">'
+            f'<span style="font-size:12px;font-weight:700;color:#334155;">'
+            f'Assessment Completion Rate</span>'
+            f'<span style="font-size:16px;font-weight:800;color:#059669;">'
+            f'{completion_rate:.1f}%</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.progress(min(completion_rate / 100, 1.0))
+
+        if not station_details_df.empty:
+            with st.expander(
+                f"📋 View All {len(station_details_df)} Station Details"
+            ):
+                st.dataframe(
+                    station_details_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=260,
+                )
+
+    with station_right:
+        station_values = [l1_overall, l1_in_progress, l1_completed]
+
+        fig_station = go.Figure(
+            go.Bar(
+                x=["Overall", "In Progress", "Completed"],
+                y=station_values,
+                marker_color=["#2563eb", "#f59e0b", "#10b981"],
+                text=station_values if show_data_labels else None,
+                textposition="outside" if show_data_labels else "none",
+                cliponaxis=False,
+                hovertemplate="%{x}: %{y:,}<extra></extra>",
+            )
+        )
+
+        fig_station.update_layout(
+            title=dict(
+                text="<b>Station Assessment Status</b>",
+                font=dict(size=15, color="#0f172a"),
+                x=0.01,
+            ),
+            height=350,
+            margin=dict(l=25, r=25, t=48, b=35),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(showgrid=False, automargin=True),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor="#edf2f7",
+                rangemode="tozero",
+                automargin=True,
+            ),
+        )
+
+        st.plotly_chart(
+            fig_station,
+            use_container_width=True,
+            theme=None,
+            config={"displayModeBar": False},
+        )
+
+    # --------------------------------------------------------
+    # DETAILED ANALYTICS
+    # --------------------------------------------------------
+    st.markdown(
+        """
+        <div style="margin-top:14px;margin-bottom:8px;
+                    padding-bottom:8px;border-bottom:2px solid #e2e8f0;">
+            <div style="font-size:18px;font-weight:800;color:#0f172a;">
+                Standard Criteria Detailed Analytics
+            </div>
+            <div style="font-size:12px;color:#64748b;">
+                Status breakdown and action categories for each criterion
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    render_category_charts_pair(
+        "Health and Safety", "🛡️", "#ef4444",
+        filtered_df, show_data_labels,
+    )
+
+    render_category_charts_pair(
+        "Customer Experience", "⭐", "#6366f1",
+        filtered_df, show_data_labels,
+    )
+
+    render_category_charts_pair(
+        "Workplace Organization", "🏢", "#059669",
+        filtered_df, show_data_labels,
+    )
+
+    render_category_charts_pair(
+        "Logistics", "🚚", "#0284c7",
+        filtered_df, show_data_labels,
+    )
+
+
+# ============================================================
+# RAW DATA EXPLORER AND EXPORT
+# ============================================================
 with tab_explorer:
     st.markdown(
         """
-        <div style="background:white;border-radius:14px;padding:16px 20px;margin-bottom:18px;border:1.5px solid #cbd5e1;box-shadow:0 3px 12px rgba(15,23,42,0.04);">
-          <div style="font-size:18px;font-weight:800;color:#0f172a;">🔍 Global Data Explorer & Export</div>
-          <div style="font-size:12.5px;color:#64748b;">Search, inspect raw extracted fields, filter records, and export to CSV or Excel</div>
+        <div style="background:white;border-radius:12px;padding:14px 18px;
+                    margin-bottom:12px;border:1px solid #cbd5e1;">
+            <div style="font-size:18px;font-weight:800;color:#0f172a;">
+                🔍 Global Data Explorer & Export
+            </div>
+            <div style="font-size:12px;color:#64748b;">
+                Search, inspect, filter, and export observation records
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     if filtered_df.empty:
-        st.info("No records to display. Adjust filters in the sidebar.")
+        st.info(
+            "No records to display. Adjust the filters in the sidebar."
+        )
+
     else:
-        st.markdown(f"**Showing {len(filtered_df):,} matching observation records**")
+        st.markdown(
+            f"**Showing {len(filtered_df):,} matching observation records**"
+        )
 
         st.dataframe(
             filtered_df,
@@ -1337,9 +1435,13 @@ with tab_explorer:
             height=460,
         )
 
-        dl_col1, dl_col2 = st.columns([1, 1])
-        with dl_col1:
-            csv_data = filtered_df.to_csv(index=False).encode("utf-8")
+        csv_data = filtered_df.to_csv(
+            index=False
+        ).encode("utf-8")
+
+        col_csv, col_excel = st.columns(2, gap="small")
+
+        with col_csv:
             st.download_button(
                 "⬇️ Download Filtered Data as CSV",
                 data=csv_data,
@@ -1348,27 +1450,57 @@ with tab_explorer:
                 use_container_width=True,
             )
 
-        with dl_col2:
+        with col_excel:
             buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-                filtered_df.to_excel(writer, index=False, sheet_name="Filtered Observations")
-                if "cat_pivot" in locals():
-                    cat_pivot.to_excel(writer, index=False, sheet_name="Category Summary")
+
+            with pd.ExcelWriter(
+                buffer,
+                engine="openpyxl",
+            ) as writer:
+                filtered_df.to_excel(
+                    writer,
+                    index=False,
+                    sheet_name="Filtered Observations",
+                )
+
+                summary = (
+                    filtered_df[
+                        filtered_df["Category"].isin(
+                            STANDARD_CATEGORIES
+                        )
+                    ]
+                    .groupby("Category")
+                    .size()
+                    .rename("Total Affected")
+                    .reset_index()
+                )
+
+                summary.to_excel(
+                    writer,
+                    index=False,
+                    sheet_name="Criteria Summary",
+                )
+
             st.download_button(
                 "⬇️ Download Filtered Data as Excel (.xlsx)",
                 data=buffer.getvalue(),
                 file_name="wpi_filtered_observations.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                mime=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
                 use_container_width=True,
             )
 
-# ==============================================================================
-# Footer
-# ==============================================================================
+
+# ============================================================
+# FOOTER
+# ============================================================
 st.markdown(
     """
     <div class="footer-bar">
-      WORK PLACE INTEGRATION GENERAL ASSEMBELY · Standard Criteria & Station Assessment Dashboard · Stellantis
+        WORKPLACE INTEGRATION – CC22 LHD ·
+        Standard Criteria & Station Assessment Dashboard · Stellantis
     </div>
     """,
     unsafe_allow_html=True,
