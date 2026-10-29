@@ -10,7 +10,7 @@ import requests
 import streamlit as st
 
 # ============================================================
-# PAGE CONFIGURATION
+# page CONFIGURATION
 # ============================================================
 st.set_page_config(
     page_title="WORKPLACE INTEGRATION - CC22 LHD | GENERAL ASSEMBLY",
@@ -32,7 +32,7 @@ STANDARD_CATEGORIES = [
 ]
 
 # ============================================================
-# CSS STYLING (Modern Executive Theme)
+# CSS STYLING 
 # ============================================================
 st.markdown(
     """
@@ -346,7 +346,7 @@ def normalize_action_category(value):
 
 
 # ============================================================
-# GITHUB AUTO-SYNC ENGINE
+# AUTO-SYNC ENGINE
 # ============================================================
 def get_effective_github_token():
     # 1. From session state (user entered in sidebar)
@@ -1183,7 +1183,7 @@ logo_tag = (
 
 effective_tok = get_effective_github_token()
 sync_badge = (
-    '<span class="badge-sync">🟢 GITHUB AUTO-SYNC ACTIVE</span>'
+    '<span class="badge-sync"></span>'
     if effective_tok
     else '<span style="background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">📁 LOCAL DASHBOARD MODE</span>'
 )

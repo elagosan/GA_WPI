@@ -1,9 +1,6 @@
 # WORKPLACE INTEGRATION – GENERAL ASSEMBLY
 ### Standard Criteria & Station Assessment Executive Dashboard
 
-Interactive Streamlit executive analytics dashboard for Stellantis General Assembly WPI (Workplace Integration) implementation, Station Assessments, and Standard Criteria Tracking.
-
----
 
 ## 🏗️ Dashboard Architecture & Visual Flow
 1. **Executive Header**: Title, General Assembly identification, Stellantis corporate branding, and live GitHub synchronization status chip.
@@ -43,7 +40,7 @@ This dashboard is ready to deploy live for free on **Streamlit Community Cloud**
 
 ---
 
-## ⚡ Instant GitHub Auto-Sync & Real-Time Notifications
+## ⚡ Instant to-Sync & Real-Time Notifications
 When any user uploads an Excel workbook directly on the site:
 - **🐙 Loaded in GitHub**: The workbook is automatically committed and pushed to `elagosan/GA_WPI` on branch `main` via the GitHub API or Git CLI.
 - **⚙️ Processing Data**: Automatically scans all sheets, detects headers even if offset by title banners, and standardizes criteria and categories.
