@@ -665,7 +665,7 @@ def extract_station_assessment(file_bytes):
     default = {
         "overall": 44,
         "in_progress": 30,
-        "completed": 14,
+        "completed": 16,
         "details_df": pd.DataFrame(),
     }
 
