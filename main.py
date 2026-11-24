@@ -484,16 +484,10 @@ def parse_observation_tracker(raw_df):
 
 
 def extract_station_assessment(file_bytes):
-    # Fixed station assessment values as per management confirmed data
-    # Overall: 43, In Progress: 26, Completed: 17
-    FIXED_OVERALL = 43
-    FIXED_IN_PROGRESS = 26
-    FIXED_COMPLETED = 17
-
     default = {
-        "overall": FIXED_OVERALL,
-        "in_progress": FIXED_IN_PROGRESS,
-        "completed": FIXED_COMPLETED,
+        "overall": 0,
+        "in_progress": 0,
+        "completed": 0,
         "details_df": pd.DataFrame(),
     }
 
@@ -539,6 +533,22 @@ def extract_station_assessment(file_bytes):
             None,
         )
 
+        total = len(station_df)
+        completed = 0
+        in_progress = 0
+
+        if observation_col:
+            status = station_df[observation_col].astype(str).str.strip().str.lower()
+            completed = int(status.isin(["completed", "complete", "closed", "done"]).sum())
+            in_progress = int(status.isin(["inprogress", "in progress", "progress"]).sum())
+        elif completion_col:
+            completion = pd.to_numeric(station_df[completion_col], errors="coerce").fillna(0)
+            completed = int((completion >= 1).sum())
+            in_progress = total - completed
+
+        if total == 0:
+            return default
+
         details = pd.DataFrame({
             "Station": station_df[station_col].astype(str).str.strip(),
             "Status": (
@@ -551,11 +561,10 @@ def extract_station_assessment(file_bytes):
             ),
         })
 
-        # Always use fixed confirmed values for overall/in_progress/completed
         return {
-            "overall": FIXED_OVERALL,
-            "in_progress": FIXED_IN_PROGRESS,
-            "completed": FIXED_COMPLETED,
+            "overall": total,
+            "in_progress": in_progress,
+            "completed": completed,
             "details_df": details,
         }
     except Exception:
