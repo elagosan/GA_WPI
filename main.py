@@ -680,7 +680,7 @@ def render_category_charts_pair(category, icon, color, base_df, show_labels):
         )
 
         fig.update_layout(
-            title=f"<b>{category}: Action Category Items</b>",
+            title=f"<b>{category}: Action Category Breakdown</b>",
             height=250,
             margin=dict(l=95, r=35, t=45, b=25),
             paper_bgcolor="white",
@@ -1042,6 +1042,7 @@ with st.container():
         <div class="section-card">
             <div class="home-panel-title">🏢 Station Assessment</div>
             <div class="home-panel-sub">Station assessment status • Overview and progress completion</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -1267,12 +1268,84 @@ with tab_home:
         inprog_vals = [int(v) for v in cat_pivot["In Progress"]]
         totals = [int(v) for v in cat_pivot["Total Affected"]]
 
+        # Per-category distinct colors matching reference
+        CATEGORY_COLORS = {
+            "Customer Experience": "#6366f1",      # purple/indigo
+            "Workplace Organization": "#059669",   # green
+            "Health and Safety": "#ef4444",        # red
+            "Logistics": "#0284c7",                # blue
+        }
+
         display_names = {
             "Customer Experience": "Customer<br>Experience",
             "Workplace Organization": "Workplace<br>Organization",
             "Health and Safety": "Health &amp;<br>Safety",
             "Logistics": "Logistics",
         }
+
+        # ── "Total Affected by Standard Criteria" single bar chart ──
+        x_labels_display = [display_names.get(n, n) for n in names]
+        bar_colors = [CATEGORY_COLORS.get(n, "#2563eb") for n in names]
+
+        fig_total = go.Figure(
+            go.Bar(
+                x=x_labels_display,
+                y=totals,
+                marker_color=bar_colors,
+                text=totals if show_data_labels else None,
+                textposition="outside" if show_data_labels else "none",
+                cliponaxis=False,
+                textfont=dict(size=12, weight=700),
+                hovertemplate="<b>%{x}</b><br>Total Affected: %{y:,}<extra></extra>",
+            )
+        )
+        fig_total.update_layout(
+            title=dict(
+                text="<b>Total Affected by Standard Criteria</b>",
+                font=dict(size=14, color="#0f172a"),
+                x=0.01,
+            ),
+            height=300,
+            margin=dict(l=25, r=25, t=48, b=30),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(
+                showgrid=False,
+                automargin=True,
+                tickfont=dict(size=12, color="#1e293b", weight=700),
+                title="",
+            ),
+            yaxis=dict(
+                title="Total Affected Observations",
+                showgrid=True,
+                gridcolor="#edf2f7",
+                rangemode="tozero",
+                automargin=True,
+                range=[0, max(totals) * 1.3] if totals else None,
+            ),
+        )
+        st.plotly_chart(
+            fig_total,
+            use_container_width=True,
+            theme=None,
+            config={"displayModeBar": False},
+        )
+
+        # Legend row below the bar chart
+        legend_parts = "".join([
+            f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;">'
+            f'<span style="width:12px;height:12px;border-radius:50%;background:{CATEGORY_COLORS.get(n,"#2563eb")};display:inline-block;"></span>'
+            f'<span style="font-size:11.5px;font-weight:700;color:#334155;">{n}: '
+            f'<b style="color:{CATEGORY_COLORS.get(n,"#2563eb")}">{t:,}</b> ({t/sum(totals)*100:.1f}%)</span>'
+            f'</span>'
+            for n, t in zip(names, totals) if sum(totals) > 0
+        ])
+        if legend_parts:
+            st.markdown(
+                f'<div style="padding:4px 8px 10px;display:flex;flex-wrap:wrap;">{legend_parts}</div>',
+                unsafe_allow_html=True,
+            )
 
         fig = go.Figure()
         max_affected = max(totals) if totals else 100
