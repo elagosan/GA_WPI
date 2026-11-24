@@ -1029,50 +1029,22 @@ st.markdown(
 # 2. STATION ASSESSMENT (IN TOP AFTER TITLE)
 # ============================================================
 station_data = extract_station_assessment(file_bytes)
-
-extracted_overall = int(station_data["overall"])
-extracted_ip = int(station_data["in_progress"])
-extracted_comp = int(station_data["completed"])
 station_details_df = station_data["details_df"]
+
+# Confirmed station assessment values
+l1_overall = 43
+l1_in_progress = 26
+l1_completed = 17
 
 with st.container():
     st.markdown(
         """
         <div class="section-card">
             <div class="home-panel-title">🏢 Station Assessment</div>
-            <div class="home-panel-sub">Station assessment status extracted directly from Excel • Overview and progress completion</div>
+            <div class="home-panel-sub">Station assessment status • Overview and progress completion</div>
         """,
         unsafe_allow_html=True,
     )
-
-    with st.expander("📝 View / Edit Station Assessment Values", expanded=False):
-        st.caption("Values are automatically extracted from the station progress sheet. You can adjust them if needed:")
-        l1_overall = st.number_input(
-            "Overall assessments",
-            min_value=0,
-            max_value=1000000,
-            value=extracted_overall,
-            step=1,
-            key="station_overall",
-        )
-        l1_in_progress = st.number_input(
-            "In progress",
-            min_value=0,
-            max_value=1000000,
-            value=extracted_ip,
-            step=1,
-            key="station_inprogress",
-        )
-        l1_completed = st.number_input(
-            "Completed",
-            min_value=0,
-            max_value=1000000,
-            value=extracted_comp,
-            step=1,
-            key="station_completed",
-        )
-        if l1_in_progress + l1_completed > l1_overall:
-            st.warning("In Progress + Completed exceeds Overall.")
 
     completion_rate = (
         l1_completed / l1_overall * 100 if l1_overall else 0
