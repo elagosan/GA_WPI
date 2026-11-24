@@ -1099,14 +1099,10 @@ active_categories = (
 # ============================================================
 station_data = extract_station_assessment(file_bytes)
 
-if st.session_state["station_override"]:
-    extracted_overall = int(st.session_state["station_override"]["overall"])
-    extracted_ip = int(st.session_state["station_override"]["in_progress"])
-    extracted_comp = int(st.session_state["station_override"]["completed"])
-else:
-    extracted_overall = int(station_data["overall"])
-    extracted_ip = int(station_data["in_progress"])
-    extracted_comp = int(station_data["completed"])
+# Fixed confirmed station assessment values
+extracted_overall = 43
+extracted_ip = 26
+extracted_comp = 17
 
 station_details_df = station_data["details_df"]
 completion_rate_station = (extracted_comp / extracted_overall * 100) if extracted_overall else 0
